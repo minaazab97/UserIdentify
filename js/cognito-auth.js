@@ -79,7 +79,7 @@ var WildRydes = window.WildRydes || {};
         };
         var attributeEmail = new AmazonCognitoIdentity.CognitoUserAttribute(dataEmail);
 
-        // Calculate the SECRET_HASH
+        // Calculate the SECRET_HASH asynchronously
         calculateSecretHash(toUsername(email), _config.cognito.userPoolClientId, _config.cognito.userPoolClientSecret).then(function(secretHash) {
             userPool.signUp(toUsername(email), password, [attributeEmail], { SECRET_HASH: secretHash },
                 function signUpCallback(err, result) {
@@ -90,6 +90,10 @@ var WildRydes = window.WildRydes || {};
                     }
                 }
             );
+        }).catch(function(error) {
+            // Handle any error that occurs while calculating the SECRET_HASH
+            console.error("Error calculating secret hash", error);
+            onFailure(error);
         });
     }
 
@@ -99,7 +103,7 @@ var WildRydes = window.WildRydes || {};
             Password: password
         });
 
-        // Calculate the SECRET_HASH
+        // Calculate the SECRET_HASH asynchronously
         calculateSecretHash(toUsername(email), _config.cognito.userPoolClientId, _config.cognito.userPoolClientSecret).then(function(secretHash) {
             var cognitoUser = createCognitoUser(email);
             cognitoUser.authenticateUser(authenticationDetails, {
@@ -109,6 +113,10 @@ var WildRydes = window.WildRydes || {};
                     onFailure(err);
                 }
             });
+        }).catch(function(error) {
+            // Handle any error that occurs while calculating the SECRET_HASH
+            console.error("Error calculating secret hash", error);
+            onFailure(error);
         });
     }
 

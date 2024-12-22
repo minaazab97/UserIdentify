@@ -47,10 +47,30 @@ var WildRydes = window.WildRydes || {};
         }
     });
 
-
     /*
      * Cognito User Pool functions
      */
+
+    function calculateSecretHash(username, clientId, clientSecret) {
+        var crypto = window.crypto || window.msCrypto;
+        return crypto.subtle.importKey(
+            'raw',
+            new TextEncoder().encode(clientSecret),
+            { name: 'HMAC', hash: { name: 'SHA-256' } },
+            false,
+            ['sign']
+        ).then(function(key) {
+            return crypto.subtle.sign(
+                { name: 'HMAC' },
+                key,
+                new TextEncoder().encode(username)
+            );
+        }).then(function(signature) {
+            var byteArray = new Uint8Array(signature);
+            var hashBase64 = btoa(String.fromCharCode.apply(null, byteArray));
+            return hashBase64;
+        });
+    }
 
     function register(email, password, onSuccess, onFailure) {
         var dataEmail = {
@@ -59,15 +79,18 @@ var WildRydes = window.WildRydes || {};
         };
         var attributeEmail = new AmazonCognitoIdentity.CognitoUserAttribute(dataEmail);
 
-        userPool.signUp(toUsername(email), password, [attributeEmail], null,
-            function signUpCallback(err, result) {
-                if (!err) {
-                    onSuccess(result);
-                } else {
-                    onFailure(err);
+        // Calculate the SECRET_HASH
+        calculateSecretHash(toUsername(email), _config.cognito.userPoolClientId, _config.cognito.userPoolClientSecret).then(function(secretHash) {
+            userPool.signUp(toUsername(email), password, [attributeEmail], { SECRET_HASH: secretHash },
+                function signUpCallback(err, result) {
+                    if (!err) {
+                        onSuccess(result);
+                    } else {
+                        onFailure(err);
+                    }
                 }
-            }
-        );
+            );
+        });
     }
 
     function signin(email, password, onSuccess, onFailure) {
@@ -76,10 +99,16 @@ var WildRydes = window.WildRydes || {};
             Password: password
         });
 
-        var cognitoUser = createCognitoUser(email);
-        cognitoUser.authenticateUser(authenticationDetails, {
-            onSuccess: onSuccess,
-            onFailure: onFailure
+        // Calculate the SECRET_HASH
+        calculateSecretHash(toUsername(email), _config.cognito.userPoolClientId, _config.cognito.userPoolClientSecret).then(function(secretHash) {
+            var cognitoUser = createCognitoUser(email);
+            cognitoUser.authenticateUser(authenticationDetails, {
+                onSuccess: onSuccess,
+                onFailure: function(err) {
+                    err.secretHash = secretHash; // Pass the hash for debugging
+                    onFailure(err);
+                }
+            });
         });
     }
 

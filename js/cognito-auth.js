@@ -82,7 +82,8 @@ var WildRydes = window.WildRydes || {};
         // Calculate the SECRET_HASH asynchronously
         calculateSecretHash(toUsername(email), _config.cognito.userPoolClientId, _config.cognito.userPoolClientSecret).then(function(secretHash) {
             // Pass an empty array for ValidationData if not needed
-            userPool.signUp(toUsername(email), password, [attributeEmail], { SECRET_HASH: secretHash }, function signUpCallback(err, result) {
+            var validationData = [];  // Ensure ValidationData is an empty array
+            userPool.signUp(toUsername(email), password, [attributeEmail], { SECRET_HASH: secretHash, ValidationData: validationData }, function signUpCallback(err, result) {
                 if (!err) {
                     onSuccess(result);
                 } else {

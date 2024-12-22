@@ -81,17 +81,15 @@ var WildRydes = window.WildRydes || {};
 
         // Calculate the SECRET_HASH asynchronously
         calculateSecretHash(toUsername(email), _config.cognito.userPoolClientId, _config.cognito.userPoolClientSecret).then(function(secretHash) {
-            userPool.signUp(toUsername(email), password, [attributeEmail], { SECRET_HASH: secretHash },
-                function signUpCallback(err, result) {
-                    if (!err) {
-                        onSuccess(result);
-                    } else {
-                        onFailure(err);
-                    }
+            // Pass an empty array for ValidationData if not needed
+            userPool.signUp(toUsername(email), password, [attributeEmail], { SECRET_HASH: secretHash }, function signUpCallback(err, result) {
+                if (!err) {
+                    onSuccess(result);
+                } else {
+                    onFailure(err);
                 }
-            );
+            });
         }).catch(function(error) {
-            // Handle any error that occurs while calculating the SECRET_HASH
             console.error("Error calculating secret hash", error);
             onFailure(error);
         });
@@ -114,7 +112,6 @@ var WildRydes = window.WildRydes || {};
                 }
             });
         }).catch(function(error) {
-            // Handle any error that occurs while calculating the SECRET_HASH
             console.error("Error calculating secret hash", error);
             onFailure(error);
         });
